@@ -18,6 +18,20 @@ function! s:location_sink(str) abort
   call OmniSharp#locations#Navigate(quickfix)
 endfunction
 
+function! s:decomp_sink(str) abort
+  for quickfix in s:quickfixes
+    if s:format_line(quickfix) == a:str
+      break
+    endif
+  endfor
+  echo quickfix.filename
+  if quickfix.filename == "$metadata"
+    call OmniSharp#actions#definition#FindFromMetadata(quickfix)
+  else
+    call OmniSharp#locations#Navigate(quickfix)
+  endif
+endfunction
+
 function! fzf#OmniSharp#FindSymbols(quickfixes) abort
   let s:quickfixes = a:quickfixes
   let symbols = []
@@ -112,4 +126,16 @@ function! fzf#OmniSharp#FindMembers(quickfixes, target) abort
   \ 'sink': function('s:location_sink')})))
 endfunction
 
+function! fzf#OmniSharp#FindImplementations(quickfixes, target) abort
+  let s:quickfixes = a:quickfixes
+  let usages = []
+  for quickfix in s:quickfixes
+    call add(usages, s:format_line(quickfix))
+  endfor
+  let fzf_options = copy(get(g:, 'OmniSharp_fzf_options', { 'down': '40%' }))
+  call fzf#run(fzf#wrap(
+  \ extend(fzf_options, {
+  \ 'source': usages,
+  \ 'sink': function('s:decomp_sink')})))
+endfunction
 " vim:et:sw=2:sts=2

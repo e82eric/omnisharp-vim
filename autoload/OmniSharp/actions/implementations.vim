@@ -41,11 +41,11 @@ endfunction
 
 function! s:StdioFindRH(Callback, response) abort
   if !a:response.Success | return | endif
-  let responses = a:response.Body.QuickFixes
+  let responses = a:response.Body
   if type(responses) == type([])
     call a:Callback(OmniSharp#locations#Parse(responses))
   else
-    call a:Callback([])
+    call a:Callback(OmniSharp#locations#Parse(responses))
   endif
 endfunction
 
@@ -57,8 +57,7 @@ function! s:CBFindImplementations(target, locations) abort
     call OmniSharp#locations#Navigate(a:locations[0])
   else " numImplementations > 1
     let locations = OmniSharp#locations#Modify(a:locations)
-    call OmniSharp#locations#SetQuickfix(locations,
-    \ 'Implementations: ' . a:target)
+    call fzf#OmniSharp#FindImplementations(a:locations, "implementations")
   endif
   return numImplementations
 endfunction

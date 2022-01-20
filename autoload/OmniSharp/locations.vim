@@ -85,9 +85,11 @@ function! OmniSharp#locations#Navigate(location, ...) abort
   return navigated
 endfunction
 
-function! OmniSharp#locations#Parse(quickfixes) abort
+function! OmniSharp#locations#Parse(body) abort
+  let qfs = get(a:body, 'QuickFixes')
+  let mfs = get(a:body, 'MetadataFiles')
   let locations = []
-  for quickfix in a:quickfixes
+  for quickfix in qfs
     let location = {
     \ 'filename': has_key(quickfix, 'FileName')
     \   ? OmniSharp#util#TranslatePathForClient(quickfix.FileName)
@@ -103,6 +105,20 @@ function! OmniSharp#locations#Parse(quickfixes) abort
     endif
     call add(locations, location)
   endfor
+
+  for metadatafile in mfs
+    let d = { 'MetadataSource': metadatafile }
+    let location = {
+    \ 'filename': "$metadata",
+    \ 'text': "$metadata".get(metadatafile, 'TypeName'),
+    \ 'lnum': metadatafile.Line,
+    \ 'col': metadatafile.Column,
+    \ 'vcol': 1,
+    \ 'metadata': d
+    \}
+    call add(locations, location)
+  endfor
+
   return locations
 endfunction
 

@@ -31,6 +31,33 @@ function! OmniSharp#actions#definition#Find(...) abort
   endif
 endfunction
 
+function! OmniSharp#actions#definition#FindFromMetadata(...) abort
+  let metadata = a:1
+  let opts = { 'editcommand': 'edit' }
+  let Cback = function('s:CBGotoDefinition', [opts])
+  let Callback = function('s:CBMetadataFind', [Cback])
+  call s:StdioMetadataFind(Callback, get(a:1, 'metadata'))
+"function! s:CBMetadataFind(Callback, response, metadata) abort
+  " if a:0 && type(a:1) == type(function('tr'))
+  "   let Callback = a:1
+  " else
+  "   let opts = { 'editcommand': 'edit' }
+  "   if a:0 && type(a:1) == type('') && a:1 !=# ''
+  "     let opts.editcommand = a:1
+  "   endif
+  "   let Callback = function('s:CBGotoDefinition', [opts])
+  " endif
+
+  " if g:OmniSharp_server_stdio
+  "   call s:StdioFind(Callback)
+  " else
+  "   let loc = OmniSharp#py#Eval('gotoDefinition()')
+  "   if OmniSharp#py#CheckForError() | return 0 | endif
+  "   " We never come from metadata here
+  "   return Callback(loc, 0)
+  " endif
+endfunction
+
 function! OmniSharp#actions#definition#Preview() abort
   if g:OmniSharp_server_stdio
     let Callback = function('s:CBPreviewDefinition')
@@ -94,10 +121,19 @@ function! s:CBMetadataFind(Callback, response, metadata) abort
   let bufnr = bufadd(temp_file)
   call setbufvar(bufnr, 'OmniSharp_host', host)
   call setbufvar(bufnr, 'OmniSharp_metadata_filename', a:response.SourceName)
+  let line = 0
+  let column = 0
+  if exists("a:metadata.Line")
+    let line=a:metadata.Line
+    let column=a:metadata.Column
+  else
+    let line=a:metadata.MetadataSource.Line
+    let column=a:metadata.MetadataSource.Column
+  endif
   let location = {
   \ 'filename': temp_file,
-  \ 'lnum': a:metadata.Line,
-  \ 'col': a:metadata.Column
+  \ 'lnum': line,
+  \ 'col': column
   \}
   call a:Callback(location, 1)
 endfunction
