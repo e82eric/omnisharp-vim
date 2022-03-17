@@ -35,11 +35,12 @@ endfunction
 
 function! s:StdioFindRH(Callback, response) abort
   if !a:response.Success | return | endif
-  let usages = a:response.Body.QuickFixes
+  let usages = a:response.Body
   if type(usages) == type([])
     call a:Callback(OmniSharp#locations#Parse(usages))
   else
-    call a:Callback([])
+    call a:Callback(OmniSharp#locations#Parse(usages))
+    " call a:Callback([])
   endif
 endfunction
 
@@ -50,9 +51,10 @@ function! s:CBFindUsages(target, locations) abort
     return 0
   endif
 
-  let locations = OmniSharp#locations#Modify(a:locations)
+  " let locations = OmniSharp#locations#Modify(a:locations)
   if get(g:, 'OmniSharp_selector_findusages', '') ==? 'fzf'
-    call fzf#OmniSharp#FindUsages(locations, a:target)
+    " call fzf#OmniSharp#FindUsages(locations, a:target)
+    call fzf#OmniSharp#FindImplementations(a:locations, a:target)
   elseif get(g:, 'OmniSharp_selector_findusages', '') ==? 'clap'
     call clap#OmniSharp#FindUsages(locations, a:target)
   else

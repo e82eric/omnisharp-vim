@@ -126,7 +126,11 @@ function! s:CBMetadataFind(Callback, response, metadata) abort
   if exists("a:metadata.Line")
     let line=a:metadata.Line
     let column=a:metadata.Column
-  else
+  elseif exists("a:response.Line")
+    let line=a:response.Line
+    let column=a:response.Column
+  endif
+  if exists("a:metadata.MetadataSource.Line")
     let line=a:metadata.MetadataSource.Line
     let column=a:metadata.MetadataSource.Column
   endif

@@ -54,7 +54,8 @@ function! s:CBFindImplementations(target, locations) abort
   if numImplementations == 0
     echo 'No implementations found'
   elseif numImplementations == 1
-    call OmniSharp#locations#Navigate(a:locations[0])
+    call fzf#OmniSharp#FindImplementations(a:locations, "implementations")
+    " call OmniSharp#locations#Navigate(a:locations[0])
   else " numImplementations > 1
     let locations = OmniSharp#locations#Modify(a:locations)
     call fzf#OmniSharp#FindImplementations(a:locations, "implementations")

@@ -89,35 +89,57 @@ function! OmniSharp#locations#Parse(body) abort
   let qfs = get(a:body, 'QuickFixes')
   let mfs = get(a:body, 'MetadataFiles')
   let locations = []
-  for quickfix in qfs
-    let location = {
-    \ 'filename': has_key(quickfix, 'FileName')
-    \   ? OmniSharp#util#TranslatePathForClient(quickfix.FileName)
-    \   : expand('%:p'),
-    \ 'text': get(quickfix, 'Text', get(quickfix, 'Message', '')),
-    \ 'lnum': quickfix.Line,
-    \ 'col': quickfix.Column,
-    \ 'vcol': 1
-    \}
-    if has_key(quickfix, 'EndLine') && has_key(quickfix, 'EndColumn')
-      let location.end_lnum = quickfix.EndLine
-      let location.end_col = quickfix.EndColumn - 1
-    endif
-    call add(locations, location)
-  endfor
+  if type(qfs) == type([])
+    for quickfix in qfs
+      let location = {
+      \ 'filename': has_key(quickfix, 'FileName')
+      \   ? OmniSharp#util#TranslatePathForClient(quickfix.FileName)
+      \   : expand('%:p'),
+      \ 'text': get(quickfix, 'Text', get(quickfix, 'Message', '')),
+      \ 'lnum': quickfix.Line,
+      \ 'col': quickfix.Column,
+      \ 'vcol': 1
+      \}
+      if has_key(quickfix, 'EndLine') && has_key(quickfix, 'EndColumn')
+        let location.end_lnum = quickfix.EndLine
+        let location.end_col = quickfix.EndColumn - 1
+      endif
+      call add(locations, location)
+    endfor
+  elseif type(qfs) == type({})
+    for quickfix in a:body
+      let location = {
+      \ 'filename': has_key(quickfix, 'FileName')
+      \   ? OmniSharp#util#TranslatePathForClient(quickfix.FileName)
+      \   : expand('%:p'),
+      \ 'text': get(quickfix, 'Text', get(quickfix, 'Message', '')),
+      \ 'lnum': quickfix.Line,
+      \ 'col': quickfix.Column,
+      \ 'vcol': 1
+      \}
+      if has_key(quickfix, 'EndLine') && has_key(quickfix, 'EndColumn')
+        let location.end_lnum = quickfix.EndLine
+        let location.end_col = quickfix.EndColumn - 1
+      endif
+      call add(locations, location)
+    endfor
+  endif
 
-  for metadatafile in mfs
-    let d = { 'MetadataSource': metadatafile }
-    let location = {
-    \ 'filename': "$metadata",
-    \ 'text': "$metadata".get(metadatafile, 'TypeName'),
-    \ 'lnum': metadatafile.Line,
-    \ 'col': metadatafile.Column,
-    \ 'vcol': 1,
-    \ 'metadata': d
-    \}
-    call add(locations, location)
-  endfor
+  if type(mfs) == type([])
+    for metadatafile in mfs
+      let d = { 'MetadataSource': metadatafile }
+      let location = {
+      \ 'filename': "$metadata",
+      \ 'text': metadatafile.SourceLine,
+      \ 'lnum': metadatafile.Line,
+      \ 'col': metadatafile.Column,
+      \ 'vcol': 1,
+      \ 'metadata': d,
+      \ 'sourcetext': metadatafile.SourceText
+      \}
+      call add(locations, location)
+    endfor
+  endif
 
   return locations
 endfunction
