@@ -19,10 +19,6 @@ function! OmniSharp#GetHost(...) abort
     if get(host, 'sln_or_dir', '') ==# ''
       let host.sln_or_dir = OmniSharp#FindSolutionOrDir(1, bufnr)
       let host.initialized = 0
-      let job = OmniSharp#proc#GetJob(host.sln_or_dir)
-      if type(job) != type({})
-        call OmniSharp#StartServer(host.sln_or_dir)
-      endif
       call setbufvar(bufnr, 'OmniSharp_host', host)
     endif
     " The returned dict includes the job, but the job is _not_ part of
@@ -110,6 +106,7 @@ endfunction
 function! OmniSharp#FindSolutionOrDir(...) abort
   let interactive = a:0 ? a:1 : 1
   let bufnr = a:0 > 1 ? a:2 : bufnr('%')
+  let tmp = getbufvar(bufnr, 'OmniSharp_buf_server')
   if empty(getbufvar(bufnr, 'OmniSharp_buf_server'))
     try
       let sln = s:FindSolution(interactive, bufnr)

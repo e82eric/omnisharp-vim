@@ -131,6 +131,10 @@ function! fzf#OmniSharp#FindImplementations(quickfixes, target) abort
   let fzf_options = copy(get(g:, 'OmniSharp_fzf_options', { 'down': '40%' }))
 
   let g:t = []
+
+  let bufnr = a:0 > 1 ? a:2 : bufnr('%')
+  let g:tempsln = getbufvar(bufnr, 'OmniSharp_buf_server')
+
   for q in a:quickfixes
     call add(g:t, [q.filename, q.text, get(q, 'sourcetext', ''), q])
   endfor
@@ -140,6 +144,7 @@ lua << EOF
   local previewers = require "telescope.previewers"
   local action_state = require "telescope.actions.state"
   local tmp = vim.g.t
+	local tmp2 = vim.g.tempsln
   colors({
 		attach_mappings = function(prompt_bufnr, map)
 			actions.select_default:replace(function()
@@ -160,6 +165,7 @@ lua << EOF
 				return entry.value
 			end,
 			define_preview = function(self, entry)
+				vim.fn.setbufvar(self.state.bufnr, 'OmniSharp_buf_server', tmp2)
 				if entry.value[1] ~= "$metadata" then
 					local p = entry.value[1]
 					if p == nil or p == "" then
@@ -169,16 +175,13 @@ lua << EOF
 						bufname = self.state.bufname,
 						winid = self.state.winid,
 						callback = function(bufnr)
+							vim.fn.setbufvar(bufnr, 'OmniSharp_buf_server', tmp2)
 							local currentWinId = vim.fn.bufwinnr(bufnr)
 							if currentWinId ~= -1 then
 								local metaObj = entry.value[4].metadata
 								if metaObj ~= null then
 									local startColumn = metaObj.StartColumn
 									local endColumn = metaObj.EndColumn
-									print("Column Info")
-									print(startColumn)
-									print(endColumn)
-									print(entry.value[4].lnum)
 									vim.api.nvim_buf_add_highlight(bufnr, -1, "TelescopePreviewLine", entry.value[4].lnum -1, startColumn, endColumn)
 									vim.api.nvim_win_set_cursor(self.state.winid, { entry.value[4].lnum, 0 })
 								end
@@ -193,12 +196,6 @@ lua << EOF
 			end
 		},
   }, tmp)
-
-  local M = {}
-
-  function M.whatever()
-    print("whatever called")
-  end
 EOF
 endfunction
 
@@ -214,7 +211,8 @@ function! s:StdioMetadataFind(Callback, metadata, bufnr, winid) abort
   let opts = {
   \ 'ResponseHandler': function('s:StdioMetadataFindRH', [a:Callback, a:metadata, a:bufnr, a:winid]),
   \ 'Parameters': a:metadata.MetadataSource,
-  \ 'Initializing': 1
+  \ 'Initializing': 1,
+	\ 'BufNum': a:bufnr
   \}
   call OmniSharp#stdio#Request('/metadata', opts)
 endfunction
@@ -225,7 +223,7 @@ function! s:StdioMetadataFindRH(Callback, metadata, bufnr, winid, response) abor
 endfunction
 
 function! s:CBMetadataFind(Callback, response, metadata, bufnr, winid) abort
-  let host = OmniSharp#GetHost()
+  let host = OmniSharp#GetHost(a:bufnr)
   let lines = split(a:response.Source, "\n", 1)
   let lines = map(lines, {i,v -> substitute(v, '\r', '', 'g')})
   call setbufline(a:bufnr, 1, lines)
